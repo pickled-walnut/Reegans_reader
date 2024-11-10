@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QFileDialog, QMenuBar, QMenu, QAction, QColorDialog, QFontDialog, QInputDialog
 from PyQt5.QtGui import QColor, QFont, QTextCharFormat
 from PyQt5.QtCore import Qt
+from OCR import ImageReader
 
 class TextEditor(QWidget):
     def __init__(self):
@@ -39,9 +40,13 @@ class TextEditor(QWidget):
 
         # File Menu
         fileMenu = menubar.addMenu('File')
-        openAction = QAction('Open', self)
-        openAction.triggered.connect(self.openFile)
-        fileMenu.addAction(openAction)
+        openFileAction = QAction('Open Text File', self)
+        openFileAction.triggered.connect(self.openFile)
+        fileMenu.addAction(openFileAction)
+
+        openImageAction = QAction('Open Image for OCR', self)
+        openImageAction.triggered.connect(self.openImage)
+        fileMenu.addAction(openImageAction)
 
         # View Menu
         viewMenu = menubar.addMenu('View')
@@ -60,14 +65,11 @@ class TextEditor(QWidget):
         bgColorAction = QAction('Change Background Color', self)
         bgColorAction.triggered.connect(self.changeBackgroundColor)
         viewMenu.addAction(bgColorAction)
-        
+
         # Resize Text Action
         resizeTextAction = QAction('Resize Text', self)
         resizeTextAction.triggered.connect(self.resizeText)
         viewMenu.addAction(resizeTextAction)
-
-        # Add the menu bar to the main window
-        # self.setMenuBar(menubar)
 
     def openFile(self):
         # Open file dialog to load a text file
@@ -77,6 +79,21 @@ class TextEditor(QWidget):
             with open(filePath, 'r', encoding='utf-8') as file:
                 fileContent = file.read()
                 self.textEdit.setPlainText(fileContent)
+
+    def openImage(self):
+        # Open file dialog to select an image
+        options = QFileDialog.Options()
+        imagePath, _ = QFileDialog.getOpenFileName(self, "Open Image File", "",
+                                                   "Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.gif)", options=options)
+        if imagePath:
+            extracted_text = self.get_image_data(imagePath)  # Call your OCR function to extract text
+            self.textEdit.setPlainText(extracted_text)
+
+    def get_image_data(self, path):
+        # This method uses the ImageReader class to extract text from an image
+        reader = ImageReader(path)
+        data = reader.get_data()  # Assuming this returns the text data
+        return data
 
     def changeFont(self):
         # Open font dialog for font selection
@@ -104,8 +121,6 @@ class TextEditor(QWidget):
             # Apply the formatting to the entire document
             cursor.mergeCharFormat(fmt)
 
-
-
     def changeBackgroundColor(self):
         # Get the current background color of the QTextEdit
         current_color = self.textEdit.palette().color(self.textEdit.backgroundRole())
@@ -120,7 +135,7 @@ class TextEditor(QWidget):
     def resizeText(self):
         # Ask the user to input the new font size
         new_size, ok = QInputDialog.getInt(self, 'Resize Text', 'Enter new font size:', 12, 1, 100, 1)
-        
+
         if ok:
             # Create a QTextCursor to select all text in the document
             cursor = self.textEdit.textCursor()
@@ -135,6 +150,7 @@ class TextEditor(QWidget):
             # Apply the formatting to the entire document
             cursor.mergeCharFormat(fmt)
 
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
@@ -144,4 +160,3 @@ if __name__ == '__main__':
 
     # Execute the application
     sys.exit(app.exec_())
-
